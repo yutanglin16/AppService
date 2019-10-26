@@ -1,0 +1,791 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en_US"><generator uri="https://jekyllrb.com/" version="3.8.6">Jekyll</generator><link href="https://azure.github.io/AppService/feed.xml" rel="self" type="application/atom+xml" /><link href="https://azure.github.io/AppService/" rel="alternate" type="text/html" hreflang="en_US" /><updated>2019-10-26T01:01:08+00:00</updated><id>https://azure.github.io/AppService/feed.xml</id><title type="html">App Service Blog</title><subtitle>Azure App Service team blog archives.</subtitle><author><name>Azure App Service</name></author><entry><title type="html">Mitigate your CPU problems before they happen</title><link href="https://azure.github.io/AppService/2019/10/07/Mitigate-your-CPU-problems-before-they-even-happen.html" rel="alternate" type="text/html" title="Mitigate your CPU problems before they happen" /><published>2019-10-07T00:00:00+00:00</published><updated>2019-10-07T00:00:00+00:00</updated><id>https://azure.github.io/AppService/2019/10/07/Mitigate%20your%20CPU%20problems%20before%20they%20even%20happen</id><content type="html" xml:base="https://azure.github.io/AppService/2019/10/07/Mitigate-your-CPU-problems-before-they-even-happen.html">&lt;blockquote&gt;
+  &lt;p&gt;Currently offered in App Service Diagnostics for Windows web apps.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Imagine there is a CPU spike in your cloud application at 2:00 in the morning, would you like to be woken up to mitigate and troubleshoot the issue or would you rather have the issue mitigated automatically and troubleshoot after a good night’s sleep? For those of us that enjoy a good night’s sleep, &lt;strong&gt;Proactive CPU monitoring&lt;/strong&gt; is an easy, proactive way to take an action when your app or its child process is consuming too much CPU. You can configure CPU rules to temporarily mitigate a high CPU issue until the real cause for the unexpected issue is found.&lt;/p&gt;
+
+&lt;h2 id=&quot;finding-proactive-cpu-monitoring&quot;&gt;Finding Proactive CPU Monitoring&lt;/h2&gt;
+
+&lt;p&gt;To access &lt;strong&gt;Proactive CPU Monitoring&lt;/strong&gt;, browse to your App Service web app in &lt;a href=&quot;https://portal.azure.com&quot;&gt;Azure portal&lt;/a&gt; and click &lt;strong&gt;Diagnose and solve problems&lt;/strong&gt; in the left navigation panel. Then, click on the homepage tile named &lt;strong&gt;Diagnostic Tools&lt;/strong&gt;. Once you are inside Diagnostic Tools, click &lt;strong&gt;Proactive CPU Monitoring&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/AppService/media/2019/10/diagnostic-tools.png&quot; alt=&quot;Diagnostic Tools&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;configuring-proactive-cpu-monitoring&quot;&gt;Configuring Proactive CPU Monitoring&lt;/h2&gt;
+
+&lt;p&gt;Proactive CPU monitoring operates based on 5 conditions and 4 modes of action by checking w3wp.exe process of the site or any child processes.&lt;/p&gt;
+
+&lt;h3 id=&quot;conditions&quot;&gt;Conditions&lt;/h3&gt;
+
+&lt;p&gt;There are five conditions you can configure to tailor to your needs.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;CPU Threshold&lt;/strong&gt;: the CPU threshold at which the rule will be triggered&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Threshold Seconds&lt;/strong&gt;: the duration of the CPU exceeding the CPU threshold. The rule will be triggered at the end of the duration.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Monitor Frequency&lt;/strong&gt;: defines how often the condition will be evaluated&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Maximum Actions&lt;/strong&gt;: the maximum number of memory dumps that the rule collects, ensuring no dumps are collected beyond the set amount&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Maximum Duration&lt;/strong&gt;: the maximum duration of the rule until it becomes deactivated&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;actions&quot;&gt;Actions&lt;/h3&gt;
+
+&lt;p&gt;Once the conditions are met, your selected action is triggered. Proactive CPU Monitoring offers 4 different modes listed below.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;Collect&lt;/strong&gt;: In this mode, a memory dump is collected whenever any process consumes CPU greater than the CPU Threshold for longer than the allowed Threshold Seconds. (Monitor Duration should always be lower than Threshold Seconds) Memory dump is collected via &lt;code class=&quot;highlighter-rouge&quot;&gt;ProcDump.exe&lt;/code&gt;, and the number of dumps (or actions) are controlled by Maximum Actions. Once Maximum Duration is met, the rule becomes deactivated.&lt;/p&gt;
+
+    &lt;p&gt;When the memory dump is collected, the process is frozen until the dump generation completes. The time the process is frozen depends directly on the memory consumed by the process. The size of the dump generated is also directly proportional to the memory consumed by the process.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;Kill&lt;/strong&gt;:  In this mode, the process is killed when the condition is met. The Maximum Actions is not honored and monitoring stops automatically after Maximum Duration. Kill is a forceful termination of the process and not a graceful exit. All requests that the current worker process is processing will be terminated, and end users may see 502 errors. If system terminates the child process, the error message may even be 500 or some form of application exception based on the stack.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;Collect and Kill&lt;/strong&gt;: In this mode, a memory dump is collected and the process consuming high CPU is killed when the site’s process (or child process) consumes CPU greater than CPU threshold for more than Threshold Seconds. No analysis is performed but after the session finishes, you have an option to analyze the memory dump after the session ends by clicking the Analyze button.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;Collect, Kill, and Analyze&lt;/strong&gt;: In this mode, a memory dump is collected and the process consuming high CPU is killed when a site’s process (or child process) consumes CPU greater than the CPU threshold for longer than the allowed Threshold Seconds. In addition, CPU dumps are analyzed by DumpAnalyzer tool, and an analysis report is generated. Analyzing a dump with this tool has some CPU impact on the instance and takes roughly 5-7 minutes at minimum to analyze one dump file. Analysis can take longer if the dump size is larger and depending upon what is captured in the dump.&lt;/p&gt;
+
+    &lt;p&gt;To prevent CPU overhead, only one dump is analyzed by the instance at a time. For example, if there are 10 instances and say the monitoring collected 5 dumps, all instances in parallel can analyze memory dumps. If there is 1 instance and 5 dumps are collected, the dump analysis will happen one after the other.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;/AppService/media/2019/10/proactive-cpu-monitoring-configuration.png&quot; alt=&quot;Configuring Proactive CPU Monitoring&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;whats-next&quot;&gt;What’s Next&lt;/h2&gt;
+
+&lt;p&gt;Once you set the rule that best suits your app’s need, you can get ahead of your CPU issues, automatically mitigate CPU spikes, and save yourself from a dreadful 2:00am call.&lt;/p&gt;
+
+&lt;p&gt;Feel free to share your feedback or questions about &lt;strong&gt;Proactive CPU Monitoring&lt;/strong&gt; by emailing &lt;a href=&quot;mailto:diagnostics@microsoft.com&quot;&gt;diagnostics@microsoft.com&lt;/a&gt; or posting on &lt;a href=&quot;https://feedback.azure.com/forums/169385-web-apps​​​​​​​​​​​​​​&quot;&gt;UserVoice&lt;/a&gt; with “[Diag]” in the title.&lt;/p&gt;
+
+&lt;p&gt;For more information on other diagnostic tools, please visit &lt;a href=&quot;https://docs.microsoft.com/en-us/azure/app-service/overview-diagnostics&quot;&gt;Azure App Service diagnostics overview&lt;/a&gt;.&lt;/p&gt;</content><author><name>Azure App Service</name></author><category term="diagnostics" /><category term="troubleshooting" /><category term="self-help" /><summary type="html">Automatically mitigate CPU anomalies and save yourself from another late-night servicing call.</summary></entry><entry><title type="html">Use ARM templates to swap deployment slots</title><link href="https://azure.github.io/AppService/2019/10/02/Swap-slots-with-arm-templates.html" rel="alternate" type="text/html" title="Use ARM templates to swap deployment slots" /><published>2019-10-02T00:00:00+00:00</published><updated>2019-10-02T00:00:00+00:00</updated><id>https://azure.github.io/AppService/2019/10/02/Swap%20slots%20with%20arm%20templates</id><content type="html" xml:base="https://azure.github.io/AppService/2019/10/02/Swap-slots-with-arm-templates.html">&lt;p&gt;&lt;em&gt;A version of this article appeared on &lt;a href=&quot;https://ruslany.net/2019/10/using-arm-template-to-swap-app-service-deployment-slots/&quot;&gt;ruslany.net&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Azure Resource Manager (ARM) templates are used to automate deployment and configuration of Azure resources. With the templates you can define the infrastructure to be deployed via a JSON file and then use that file to repeatedly deploy new resources or update existing ones. ARM templates are widely used to release new versions of the Azure web apps and function apps. During a release the new version of an app is deployed to a staging slot and then it is swapped into production. This blog post explains how to automate the App Service deployment slot swap operation with an ARM template.&lt;/p&gt;
+
+&lt;p&gt;Let’s assume you have a web app with production and staging deployment slots. When you release a new version of that web app you first would deploy it to the staging slot and then swap it into production slot. To define the swap operation via ARM template you’ll need to use two properties on the “Microsoft.Web/sites” and “Microsoft.Web/sites/slots” resources:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;buildVersion&lt;/code&gt; – this is a string property which can be set to any arbitrary value that would represent the current version of the app deployed in the slot. For example: “v1“, “1.0.0.1“, “2019-09-20T11:53:25.2887393-07:00“.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;targetBuildVersion&lt;/code&gt; – this is a string property that is used to specify what version of the app the current slot should have. If the targetBuildVersion is different from the buildVersion then this will trigger the swap operation by finding a slot that has the expected build version and then swapping the site from that slot into the current slot.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;With that the process of deploying a new version of an app can be done as follows:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Deploy a new version of an app into a staging slot&lt;/li&gt;
+  &lt;li&gt;Execute ARM template to update the buildVersion of the app in staging slot&lt;/li&gt;
+  &lt;li&gt;Execute ARM template to set the targetBuildVersion on the production slot&lt;/li&gt;
+  &lt;li&gt;Here is an example ARM template that demonstrates how to perform steps #2 and #3:&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;language-json highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;$schema&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;contentVersion&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;1.0.0.0&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;parameters&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+        &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;sites_SwapAPIDemo_name&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;defaultValue&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;SwapAPIDemo&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;type&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;String&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+        &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+        &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;sites_buildVersion&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;defaultValue&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;v1&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;type&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;String&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+        &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;resources&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+        &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;type&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Microsoft.Web/sites/slots&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;apiVersion&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;2018-02-01&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;name&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;[concat(parameters('sites_SwapAPIDemo_name'), '/staging')]&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;location&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;East US&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;kind&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;app&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;properties&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+                &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;buildVersion&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;[parameters('sites_buildVersion')]&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+        &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+        &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;type&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Microsoft.Web/sites&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;apiVersion&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;2018-02-01&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;name&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;[parameters('sites_SwapAPIDemo_name')]&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;location&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;East US&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;kind&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;app&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;dependsOn&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+                &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;[resourceId('Microsoft.Web/sites/slots', parameters('sites_SwapAPIDemo_name'), 'staging')]&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;properties&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+                &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;targetBuildVersion&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;[parameters('sites_buildVersion')]&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+            &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+        &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This ARM template is idempotent, meaning that it can be executed repeatedly and produce the same state of the slots. In other words if you re-run the same template with the same parameters after the swap has been performed and targetBuildVersion on production slot matches the buildVersion then it will not trigger another swap.&lt;/p&gt;
+
+&lt;h2 id=&quot;helpful-links&quot;&gt;Helpful links&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://docs.microsoft.com/en-us/azure/app-service/deploy-staging-slots#automate-with-arm-templates&quot;&gt;Documentation for swapping slots with ARM templates&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://docs.microsoft.com/en-us/azure/app-service/app-service-web-get-started-dotnet&quot;&gt;App Service quickstarts&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://docs.microsoft.com/en-us/azure/app-service/deploy-staging-slots#add-a-slot&quot;&gt;How to get started with slots&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</content><author><name>Azure App Service</name></author><category term="deployment slots" /><summary type="html">You can now use ARM templates to swap deployment slots.</summary></entry><entry><title type="html">PHP Minor Version Update for September 2019</title><link href="https://azure.github.io/AppService/2019/09/04/PHP-Minor-Version-Update-for-September-2019.html" rel="alternate" type="text/html" title="PHP Minor Version Update for September 2019" /><published>2019-09-04T00:00:00+00:00</published><updated>2019-09-04T00:00:00+00:00</updated><id>https://azure.github.io/AppService/2019/09/04/PHP%20Minor%20Version%20Update%20for%20September%202019</id><content type="html" xml:base="https://azure.github.io/AppService/2019/09/04/PHP-Minor-Version-Update-for-September-2019.html">&lt;p&gt;Latest version updates to PHP&lt;/p&gt;
+
+&lt;p&gt;In September 2019, Azure App Service will update the PHP stacks to the latest available versions. For information on the changes in the new versions, please see the change logs on the PHP website.&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;PHP Version&lt;/th&gt;
+      &lt;th&gt;Change Log&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;5.6.40&lt;sup&gt;1&lt;/sup&gt;&lt;/td&gt;
+      &lt;td&gt;http://www.php.net/ChangeLog-5.php#5.6.40 + security fixes from https://github.com/microsoft/php-src/commits/PHP-5.6-security-backports&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;7.0.33&lt;sup&gt;1&lt;/sup&gt;&lt;/td&gt;
+      &lt;td&gt;http://www.php.net/ChangeLog-7.php#7.0.33 + security fixes from https://github.com/microsoft/php-src/commits/PHP-7.0-security-backports&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;7.1.32&lt;/td&gt;
+      &lt;td&gt;http://www.php.net/ChangeLog-7.php#7.1.32&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;7.2.22&lt;/td&gt;
+      &lt;td&gt;http://www.php.net/ChangeLog-7.php#7.2.22&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;7.3.9&lt;/td&gt;
+      &lt;td&gt;http://www.php.net/ChangeLog-7.php#7.3.9&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;hr /&gt;
+&lt;p&gt;&lt;sup&gt;1&lt;/sup&gt; - Both PHP v5.6 and v7.0 are past &lt;a href=&quot;https://www.php.net/supported-versions.php&quot;&gt;End-Of-Life&lt;/a&gt;, and are no longer receiving security updates from the community.  However, to ensure our customers have the most secure PHP builds available, we have arranged to have relevant security fixes from supported versions of PHP backported to PHP v5.6 and v7.0.&lt;/p&gt;</content><author><name>Azure App Service</name></author><category term="PHP" /><summary type="html">Latest version updates to PHP</summary></entry><entry><title type="html">Azure App Service on Azure Stack Update 7 Released</title><link href="https://azure.github.io/AppService/2019/08/29/App-Service-on-Azure-Stack-Update-7-Released.html" rel="alternate" type="text/html" title="Azure App Service on Azure Stack Update 7 Released" /><published>2019-08-29T00:00:00+00:00</published><updated>2019-08-29T00:00:00+00:00</updated><id>https://azure.github.io/AppService/2019/08/29/App%20Service%20on%20Azure%20Stack%20Update%207%20Released</id><content type="html" xml:base="https://azure.github.io/AppService/2019/08/29/App-Service-on-Azure-Stack-Update-7-Released.html">&lt;p&gt;This afternoon we released the seventh update to Azure App Service on Azure Stack.  This release updates the resource provider and brings the following key capabilities and fixes:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Updates to &lt;strong&gt;App Service Tenant, Admin, Functions portals and Kudu tools&lt;/strong&gt;. Consistent with Azure Stack Portal SDK version.&lt;/li&gt;
+  &lt;li&gt;Updates to core service to improve reliability and error messaging enabling easier diagnosis of common issues.&lt;/li&gt;
+  &lt;li&gt;Access Restrictions now enabled in User Portal
+As of this release Users can configure Access Restrictions for their Web/Api/Functions applications according to the documentation published - Azure App Service Access Restrictions, NOTE: Azure App Service on Azure Stack does not support Service Endpoints.&lt;/li&gt;
+  &lt;li&gt;All other fixes and updates are detailed in the &lt;a href=&quot;https://docs.microsoft.com/en-us/azure-stack/operator/azure-stack-app-service-release-notes-update-seven&quot;&gt;App Service on Azure Stack Update Seven Release Notes&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The App Service on Azure Stack Update 7 build number is &lt;strong&gt;82.0.2.10&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;You can download the new installer and helper scripts:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://aka.ms/appsvcupdate7installer&quot;&gt;Installer&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://aka.ms/appsvconmashelpers&quot;&gt;Helper Scripts&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Please read the updated documentation prior to getting started with deployment:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://docs.microsoft.com/en-us/azure-stack/operator/azure-stack-app-service-release-notes-update-seven&quot;&gt;Update 7 Release Notes&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://docs.microsoft.com/azure/azure-stack/azure-stack-app-service-before-you-get-started&quot;&gt;Before you get started with App Service on Azure Stack&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://docs.microsoft.com/azure/azure-stack/azure-stack-app-service-deploy&quot;&gt;Deploy the App Service Resource Provider&lt;/a&gt; for new deployments&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://docs.microsoft.com/azure/azure-stack/azure-stack-app-service-update&quot;&gt;Update the App Service Resource Provider&lt;/a&gt; for updating existing deployments&lt;/li&gt;
+&lt;/ul&gt;</content><author><name>Azure App Service</name></author><category term="Azure Stack" /><summary type="html">This afternoon we released the seventh update to Azure App Service on Azure Stack. This release updates the resource provider and brings the following key capabilities and fixes:</summary></entry><entry><title type="html">Announcing GitHub Actions for App Service</title><link href="https://azure.github.io/AppService/2019/08/10/Github-actions-for-webapps.html" rel="alternate" type="text/html" title="Announcing GitHub Actions for App Service" /><published>2019-08-10T00:00:00+00:00</published><updated>2019-08-10T00:00:00+00:00</updated><id>https://azure.github.io/AppService/2019/08/10/Github%20actions%20for%20webapps</id><content type="html" xml:base="https://azure.github.io/AppService/2019/08/10/Github-actions-for-webapps.html">&lt;p&gt;Last week GitHub announced the preview of &lt;a href=&quot;https://github.com/features/actions&quot;&gt;GitHub Actions&lt;/a&gt; with built-in CI/CD; watch the announcement &lt;a href=&quot;https://youtu.be/E1OunoCyuhY?t=2150&quot;&gt;here&lt;/a&gt;. These actions, defined in YAML files, allow you to trigger an automated workflow process on any GitHub event. Today the App Service team is happy to share our own action, allowing you to deploy to App Service following a push or pull request.&lt;/p&gt;
+
+&lt;p&gt;With the App Service Action, you can deploy your code to any of our managed language stacks. Simply specify your source code folder, zip file, JAR or WAR. If you prefer to deploy a Docker container instead, there’s an action for that!&lt;/p&gt;
+
+&lt;h2 id=&quot;getting-started&quot;&gt;Getting Started&lt;/h2&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;GitHub Actions are currently in Beta. Request access &lt;a href=&quot;https://github.com/features/actions/signup/&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h3 id=&quot;configure-the-repository&quot;&gt;Configure the repository&lt;/h3&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Open the Azure Portal and navigate to your web app.&lt;/li&gt;
+  &lt;li&gt;In the toolbar, select &lt;strong&gt;Get publish profile&lt;/strong&gt;. This will trigger a download.
+ &lt;img src=&quot;/AppService/media/2019/08/GitHubActions-publish-profile.png&quot; alt=&quot;Get publish profile&quot; /&gt;&lt;/li&gt;
+  &lt;li&gt;Open the downloaded file and copy the contents&lt;/li&gt;
+  &lt;li&gt;Open GitHub and navigate to your repository&lt;/li&gt;
+  &lt;li&gt;Select &lt;strong&gt;Settings&lt;/strong&gt; &amp;gt; &lt;strong&gt;Secrets&lt;/strong&gt;. On the Secrets page, select &lt;strong&gt;Add a new secret&lt;/strong&gt; and paste your publish profile XML.
+ &lt;img src=&quot;/AppService/media/2019/08/GitHubActions-Secrets.png&quot; alt=&quot;Add a secret on GitHub&quot; /&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Now you’re ready to create the workflow file.&lt;/p&gt;
+
+&lt;h3 id=&quot;create-the-action&quot;&gt;Create the action&lt;/h3&gt;
+
+&lt;p&gt;If you do not have any workflows defined, select the &lt;strong&gt;Actions&lt;/strong&gt; tab and follow the prompts to create a new workflow. This will create a new directory an file in the root of your repository, &lt;code class=&quot;highlighter-rouge&quot;&gt;/.github/workflows/workflow.yml&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;In the editor for &lt;code class=&quot;highlighter-rouge&quot;&gt;workflow.yml&lt;/code&gt;, define the build steps for your application. For example, a Node application is typically built using &lt;code class=&quot;highlighter-rouge&quot;&gt;npm install&lt;/code&gt; followed by &lt;code class=&quot;highlighter-rouge&quot;&gt;npm run build&lt;/code&gt;. Below is an example workflow file that installs the dependencies, builds the project, and runs tests on the latest Ubuntu version.&lt;/p&gt;
+
+&lt;div class=&quot;language-yaml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;na&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;push&lt;/span&gt;
+
+&lt;span class=&quot;na&quot;&gt;jobs&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;build&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;runs-on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ubuntu-latest&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;steps&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;# This checks out the repository so your workflow operates from root of repository&lt;/span&gt;
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;actions/checkout@master&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;# Install dependencies, build, and test&lt;/span&gt;
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;npm install, build, and test&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# Name is optional&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;|&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;npm install&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;npm run build --if-present&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;npm run test --if-present&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;See the &lt;a href=&quot;#examples&quot;&gt;examples&lt;/a&gt; at the end of this article for specific language examples.&lt;/p&gt;
+
+&lt;h3 id=&quot;add-the-app-service-action&quot;&gt;Add the App Service Action&lt;/h3&gt;
+
+&lt;p&gt;After your build action, add the App Service action with &lt;code class=&quot;highlighter-rouge&quot;&gt;uses: azure/appservice-actions/webapp@master&lt;/code&gt;. This action has the following required arguments. These should be listed under a &lt;code class=&quot;highlighter-rouge&quot;&gt;with:&lt;/code&gt; key:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;app-name:&lt;/code&gt; Your application name&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;package:&lt;/code&gt; The path to the deployment file or folder (relative from the root)&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;publish-profile:&lt;/code&gt; The publish profile that you pasted into the GitHub Secrets earlier&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-yaml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;# Deploy to App Service&lt;/span&gt;
+&lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;azure/appservice-actions/webapp@master&lt;/span&gt;
+&lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Deploy to app service&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;# Name is optional&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;app-name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;lt;the app name&amp;gt;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;# Replace with your app name&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;package&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;lt;path to deployment source&amp;gt;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;# Specify the folder or file to deploy&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;publish-profile&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${{ secrets.&amp;lt;your-publish-profile-name&amp;gt; }}&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;# Replace with the name of your publish profile&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;deploy-to-a-slot&quot;&gt;Deploy to a slot&lt;/h3&gt;
+
+&lt;p&gt;The App Service Action deploys to the production slot by default. To deploy to a staging slot, redo the &lt;a href=&quot;#configure-the-repository&quot;&gt;publish profile steps&lt;/a&gt; with the publish profile from your desired staging slot.&lt;/p&gt;
+
+&lt;h3 id=&quot;other-azure-actions&quot;&gt;Other Azure Actions&lt;/h3&gt;
+
+&lt;p&gt;In addition to this action, there are actions for &lt;a href=&quot;https://azure.microsoft.com/en-us/blog/announcing-the-preview-of-azure-actions-for-github/&quot;&gt;other common Azure scenarios&lt;/a&gt; such as deploying to Azure Kubernetes Service, logging into Azure with a service principal, or signing into Docker. See the &lt;a href=&quot;#helpful-Resources&quot;&gt;links below&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;examples&quot;&gt;Examples&lt;/h2&gt;
+
+&lt;h3 id=&quot;containers&quot;&gt;Containers&lt;/h3&gt;
+
+&lt;p&gt;To deploy a container, you will need to create an Azure Service Principal via the Azure CLI, then paste the details of the principal as a GitHub Secret.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Install the Azure CLI&lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Run the following command, replacing &lt;code class=&quot;highlighter-rouge&quot;&gt;{subscription}&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;{resource-group}&lt;/code&gt; with the subscription and resource group of your application&lt;/p&gt;
+
+    &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; az ad sp create-for-rbac &lt;span class=&quot;nt&quot;&gt;--name&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;myServicePrincipal&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;--role&lt;/span&gt; contributor &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+   &lt;span class=&quot;nt&quot;&gt;--scopes&lt;/span&gt; /subscriptions/&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;subscription&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;/resourceGroups/&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;resource-group&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+   &lt;span class=&quot;nt&quot;&gt;--sdk-auth&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Open GitHub and navigate to your repository&lt;/li&gt;
+  &lt;li&gt;Select &lt;strong&gt;Settings&lt;/strong&gt; &amp;gt; &lt;strong&gt;Secrets&lt;/strong&gt;. On the Secrets page, select &lt;strong&gt;Add a new secret&lt;/strong&gt; and paste the JSON output from the earlier &lt;code class=&quot;highlighter-rouge&quot;&gt;az ad sp&lt;/code&gt; command.
+ &lt;img src=&quot;/AppService/media/2019/08/GitHubActions-Secrets.png&quot; alt=&quot;Add a secret on GitHub&quot; /&gt;&lt;/li&gt;
+  &lt;li&gt;Finally, add your Docker username and password as GitHub Secrets&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Here is a full example:&lt;/p&gt;
+
+&lt;div class=&quot;language-yaml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;na&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;push&lt;/span&gt;
+
+&lt;span class=&quot;na&quot;&gt;jobs&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;deploy-container&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;runs-on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ubuntu-latest&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;steps&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;actions/checkout@master&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;# Unlike code deployment, you will authenticate using a Service Principal&lt;/span&gt;
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;azure/actions/login@master&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;creds&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${{ secrets.AZURE_SP }}&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;# These creds are used to push your new image&lt;/span&gt;
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;azure/container-actions/docker-login@master&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${{ secrets.DOCKER_USERNAME }}&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${{ secrets.DOCKER_PASSWORD }}&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;#loginServer: '&amp;lt;login server&amp;gt;' # default: index.docker.io&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;# Tag the image with the git commit hash&lt;/span&gt;
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;|&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;docker build . -t contoso/demo:${{ github.sha }}&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;docker push contoso/demo:${{ github.sha }}&lt;/span&gt;
+
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;azure/appservice-actions/webapp-container@master&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;app-name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;lt;your&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s&quot;&gt;name&amp;gt;'&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;images&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;contoso/demo:${{&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s&quot;&gt;github.sha&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s&quot;&gt;}}'&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;#configuration-file: 'Optional path to a docker compose file'&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;#container-command: 'Optional startup command for the app (dotnet run, java -jar app.jar)'&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;java&quot;&gt;Java&lt;/h3&gt;
+
+&lt;p&gt;When deploying Java apps, make sure you specify the package name relative from the root directory. Most likely, your deployment artifact will be in the &lt;code class=&quot;highlighter-rouge&quot;&gt;target/&lt;/code&gt; directory.&lt;/p&gt;
+
+&lt;div class=&quot;language-yaml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;na&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;push&lt;/span&gt;
+
+&lt;span class=&quot;na&quot;&gt;jobs&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;java-build-and-deploy&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;runs-on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ubuntu-latest&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;steps&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;# checkout the repo&lt;/span&gt;
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;actions/checkout@master&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;# install dependencies, build, and test&lt;/span&gt;
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Maven build phase&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;|&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;mvn clean package&lt;/span&gt;
+
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;azure/appservice-actions/webapp@master&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;app-name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;lt;your-app-name&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;publish-profile&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${{ secrets.&amp;lt;publish-profile&amp;gt; }}&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;package&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;target/app.war&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;javascript&quot;&gt;Javascript&lt;/h3&gt;
+
+&lt;div class=&quot;language-yaml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;na&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;push&lt;/span&gt;
+
+&lt;span class=&quot;na&quot;&gt;jobs&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;build-and-deploy&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;runs-on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ubuntu-latest&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;steps&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;actions/checkout@master&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;# install dependencies, build, and test&lt;/span&gt;
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;npm install, build, and test&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;|&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;npm install&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;npm run build --if-present&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;npm run test --if-present&lt;/span&gt;
+
+   &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;azure/appservice-actions/webapp@master&lt;/span&gt;
+     &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+       &lt;span class=&quot;na&quot;&gt;app-name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;lt;your-app-name&amp;gt;&lt;/span&gt;
+       &lt;span class=&quot;na&quot;&gt;publish-profile&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${{ secrets.&amp;lt;publish-profile&amp;gt; }}&lt;/span&gt;
+       &lt;span class=&quot;na&quot;&gt;package&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;.'&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;python&quot;&gt;Python&lt;/h3&gt;
+
+&lt;div class=&quot;language-yaml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;na&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;push&lt;/span&gt;
+
+&lt;span class=&quot;na&quot;&gt;jobs&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;build-and-deploy&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;runs-on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ubuntu-latest&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;steps&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;actions/checkout@master&lt;/span&gt;
+
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;install dependencies, and zip the app to use ZipDeploy&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;|&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;pip install -r requirements.txt&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;zip -r myapp.zip&lt;/span&gt;
+
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;azure/appservice-actions/webapp@master&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;app-name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;lt;your-app-name&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;publish-profile&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${{ secrets.&amp;lt;publish-profile&amp;gt; }}&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;package&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;./myapp.zip'&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;helpful-resources&quot;&gt;Helpful Resources&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/Azure/container-actions&quot;&gt;Actions for Containers&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/Azure/appservice-actions&quot;&gt;App Service Action source code&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/actions/checkout&quot;&gt;Checkout Action&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/Azure/actions&quot;&gt;Other Azure Actions&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</content><author><name>Azure App Service</name></author><category term="deployment" /><category term="devops" /><category term="github" /><summary type="html">Last week GitHub announced the preview of GitHub Actions with built-in CI/CD; watch the announcement here. These actions, defined in YAML files, allow you to trigger an automated workflow process on any GitHub event. Today the App Service team is happy to share our own action, allowing you to deploy to App Service following a push or pull request.</summary></entry><entry><title type="html">Get visibility into your app’s dependencies with Navigator</title><link href="https://azure.github.io/AppService/2019/08/06/Bring-visibility-to-your-app-and-its-dependencies-with-Navigator.html" rel="alternate" type="text/html" title="Get visibility into your app's dependencies with Navigator" /><published>2019-08-06T00:00:00+00:00</published><updated>2019-08-06T00:00:00+00:00</updated><id>https://azure.github.io/AppService/2019/08/06/Bring%20visibility%20to%20your%20app%20and%20its%20dependencies%20with%20Navigator</id><content type="html" xml:base="https://azure.github.io/AppService/2019/08/06/Bring-visibility-to-your-app-and-its-dependencies-with-Navigator.html">&lt;p&gt;Application downtime can be dreadful, especially when the app is handling mission-critical load. There could be countless causes for your app’s downtime ranging from the app’s code to the misconfiguration of its dependencies. Fast troubleshooting is the key to minimizing the production impact. However, the complex nature of today’s applications makes narrowing down the cause a lengthy and difficult process. Sometimes it requires thorough investigation of changes made to each dependent resource.&lt;/p&gt;
+
+&lt;p&gt;We are excited to announce &lt;strong&gt;Navigator&lt;/strong&gt;, a new feature offering for Windows apps in App Service Diagnostics, an intelligent and guided experience that helps you troubleshoot your web app with little to no configuration. &lt;strong&gt;Navigator&lt;/strong&gt; is a new diagnostic feature that provides a centralized view of a web app and its dependencies as well as the changes made to those dependencies. The feature can automatically render dependencies in the same subscription as a dependency map and display the changes made to each resource, leveraging &lt;a href=&quot;/AppService/2019/05/07/Announcing-the-new-change-analysis-experience-in-App-Service-Diagnostics-Analysis.html&quot;&gt;Change Analysis&lt;/a&gt;. With the new experience, you can easily identify the dependencies of your web app and explore the changes as part of your troubleshooting experience.&lt;/p&gt;
+
+&lt;p&gt;Paired with information from existing diagnostics information in App Service Diagnostics, &lt;strong&gt;Navigator&lt;/strong&gt; can supplement your troubleshooting experience by providing a timeline of the changes made by your web app and its dependencies. Correlating this information with other information offered in App Service Diagnostics can help you further understand the changes and narrow down on potential causes for unhealthy behavior.&lt;/p&gt;
+
+&lt;h2 id=&quot;finding-navigator&quot;&gt;Finding Navigator&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;Navigator&lt;/strong&gt; can be accessed through App Service Diagnostics’ homepage tile called &lt;strong&gt;Navigator&lt;/strong&gt; so you can use it concurrently with information from other tiles. For more information on how to navigate to App Service Diagnostics, please visit &lt;a href=&quot;https://docs.microsoft.com/en-us/azure/app-service/overview-diagnostics&quot;&gt;Azure App Service diagnostics overview&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/AppService/media/2019/08/navigator-homepage-tile.png&quot; alt=&quot;Navigator homepage tile&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;how-to-enable-change-analysis&quot;&gt;How to enable Change Analysis&lt;/h2&gt;
+
+&lt;p&gt;Upon opening the tool, you will see a message to enable Change Analysis. You can access the Change Analysis Settings by clicking on the &lt;strong&gt;Enable Now&lt;/strong&gt; button.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/AppService/media/2019/08/enable-now-banner.png&quot; alt=&quot;Enable Now&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Turn on &lt;strong&gt;Change Analysis&lt;/strong&gt; and click &lt;strong&gt;Save&lt;/strong&gt; to get property changes and code changes for your main web app as well as property changes for your dependent resources. [Note: If you are using Change Analysis for the first time, enabling this setting will register Change Analysis Resource Provider on your subscription.] By enabling &lt;strong&gt;Change Analysis&lt;/strong&gt;, your app’s &lt;a href=&quot;https://github.com/projectkudu/kudu/wiki&quot;&gt;Kudu&lt;/a&gt; will trigger a snapshot every 4 hours to capture the changes made between those time intervals.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/AppService/media/2019/08/change-analysis-settings.png&quot; alt=&quot;Change Analysis Settings&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;To disable Change Analysis on your web app, click on &lt;strong&gt;Go to Change Analysis Settings&lt;/strong&gt; in the upper right corner of &lt;strong&gt;Navigator&lt;/strong&gt; view. [Note: Change Analysis Resource Provider is still registered on the subscription of your web app.] To unregister Change Analysis Resource Provider from your subscription, navigate to your subscription, click &lt;strong&gt;Resource providers&lt;/strong&gt; in the left navigation, select &lt;strong&gt;Microsoft.ChangeAnalysis&lt;/strong&gt;, and click &lt;strong&gt;Unregister&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;navigating-through-the-change-timeline&quot;&gt;Navigating through the change timeline&lt;/h2&gt;
+
+&lt;p&gt;Once Change Analysis is enabled, you will see a dependency map of your web app and its dependencies in the same subscription. You can check the inner workings of your app using this view. Also, if you click on a resource supported by Change Analysis, you can view the recent changes made to the selected resource. See &lt;a href=&quot;https://docs.microsoft.com/azure/azure-monitor/app/change-analysis&quot;&gt;Change Analysis service&lt;/a&gt; to view the list of dependencies supported by Change Analysis service.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/AppService/media/2019/08/navigator-dependency-map.png&quot; alt=&quot;Navigator Dependency Map&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Once you click on each resource on the map, you will see a timeline with square boxes and a list of changes detected over the last 24 hours. These square boxes represent change(s) made during the 24 hours. You can click on each box to filter for corresponding change(s) in the list of changes below. You can also use the search bar to filter for changes that have your search term.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/AppService/media/2019/08/change-analysis-view.png&quot; alt=&quot;Change timeline and chart&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;You can also expand each row of change to view the difference between the old values and the new values.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/AppService/media/2019/08/firewall-rule-diff-view.png&quot; alt=&quot;Diff view&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Above the timeline is the &lt;strong&gt;last scanned time stamp&lt;/strong&gt; that shows the last time the timeline was updated. If you wish to find out about changes made after the last scanned time, click &lt;strong&gt;Scan changes now&lt;/strong&gt;. (This process may take few minutes)&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/AppService/media/2019/08/last-scanned-timestamp.png&quot; alt=&quot;Last scanned stamp and Scan changes now&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;After scanning is complete, you can update the timeline by clicking on &lt;strong&gt;View changes now.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/AppService/media/2019/08/view-changes-now.png&quot; alt=&quot;View changes now&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;navigator-in-practice&quot;&gt;Navigator in Practice&lt;/h2&gt;
+
+&lt;p&gt;Now, let’s explore a scenario where &lt;strong&gt;Navigator&lt;/strong&gt; can come in handy. Suppose you have noticed a spike in the database connection errors in your app caused by a firewall rule, but you do not know what has caused the issue. First, click on &lt;strong&gt;Navigator&lt;/strong&gt; in App Service Diagnostics. Take a look at the dependency map. Select a resource to explore the changes made to the resource. Browse through the timeline to see if there were any changes made before you observed unexpected behavior. If you do not find any changes on the timeline that could be related to the issue, click &lt;strong&gt;Scan changes now&lt;/strong&gt; to update the timeline with the most recent changes. After the scanning completes, click &lt;strong&gt;View changes now&lt;/strong&gt; to populate the timeline with the new changes. You notice there is one change that occurred right before the app started giving you database connection errors. Expand the new change to view the differences. You may find that you accidentally changed the firewall rules.&lt;/p&gt;
+
+&lt;p&gt;Used in tandem with other information from App Service Diagnostics, &lt;strong&gt;Navigator&lt;/strong&gt; can serve as a powerful tool for diagnosing and solving problems with your web app.&lt;/p&gt;
+
+&lt;p&gt;Feel free to share your feedback or questions about &lt;strong&gt;Navigator&lt;/strong&gt; by emailing &lt;a href=&quot;mailto:diagnostics@microsoft.com&quot;&gt;diagnostics@microsoft.com&lt;/a&gt;&lt;/p&gt;</content><author><name>Azure App Service</name></author><category term="diagnostics" /><category term="troubleshooting" /><category term="self-help" /><summary type="html">Application downtime can be dreadful, especially when the app is handling mission-critical load. There could be countless causes for your app’s downtime ranging from the app’s code to the misconfiguration of its dependencies. Fast troubleshooting is the key to minimizing the production impact. However, the complex nature of today’s applications makes narrowing down the cause a lengthy and difficult process. Sometimes it requires thorough investigation of changes made to each dependent resource.</summary></entry><entry><title type="html">Restore App Service domains within 30 days</title><link href="https://azure.github.io/AppService/2019/08/06/How-to-restore-soft-delete-App-Service-domains.html" rel="alternate" type="text/html" title="Restore App Service domains within 30 days" /><published>2019-08-06T00:00:00+00:00</published><updated>2019-08-06T00:00:00+00:00</updated><id>https://azure.github.io/AppService/2019/08/06/How%20to%20restore%20soft%20delete%20App%20Service%20domains</id><content type="html" xml:base="https://azure.github.io/AppService/2019/08/06/How-to-restore-soft-delete-App-Service-domains.html">&lt;p&gt;If you deleted your &lt;a href=&quot;https://docs.microsoft.com/en-us/azure/app-service/manage-custom-dns-buy-domain#buy-the-domain&quot;&gt;App Service Domain&lt;/a&gt; resource within the past 30 days, you can easily restore it by purchasing it again with the same Domain Registration Subscription and resource group. Unlike trying to purchase the domain name from other subscriptions or resource groups, the validation will allow you to purchase the same domain name.&lt;/p&gt;
+
+&lt;h2 id=&quot;clarifications&quot;&gt;Clarifications&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;App Service Domains are domains that were purchased from Azure App Service. Domains added to App Service websites are &lt;strong&gt;custom domains&lt;/strong&gt;. These are different resources.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;If your App Service Domain was deleted because you deleted the domain registration subscription, we do not support restoring the domain in any circumstance.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;</content><author><name>Azure App Service</name></author><category term="App Service Domains" /><summary type="html">If the domain was deleted within the past 30 days, you restore it by re-creating the resource under the same subscription and resource group.</summary></entry><entry><title type="html">Azure Key Vault References with Spring Apps</title><link href="https://azure.github.io/AppService/2019/07/30/Key-Vault-References-with-Spring-Apps.html" rel="alternate" type="text/html" title="Azure Key Vault References with Spring Apps" /><published>2019-07-30T00:00:00+00:00</published><updated>2019-07-30T00:00:00+00:00</updated><id>https://azure.github.io/AppService/2019/07/30/Key%20Vault%20References%20with%20Spring%20Apps</id><content type="html" xml:base="https://azure.github.io/AppService/2019/07/30/Key-Vault-References-with-Spring-Apps.html">&lt;p&gt;&lt;a href=&quot;https://docs.microsoft.com/en-us/azure/key-vault/&quot;&gt;Azure Key Vault&lt;/a&gt; provides a centralized service for managing secrets and certificates with full control over access policies and auditing capabilities. This article will show how to wire up a Spring Boot application on App Service to read a database username, password, and URL from Key Vault. Using Key Vault references requires &lt;strong&gt;no&lt;/strong&gt; code changes, but we will need to do some configuration acrobatics.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;See &lt;a href=&quot;https://jasonfreeberg.com/Data-Sources-with-Spring/&quot;&gt;the previous article&lt;/a&gt; for instructions on setting up the Postgres server and deploying the starter app to App Service.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&quot;set-up-a-managed-identity&quot;&gt;Set up a Managed Identity&lt;/h2&gt;
+
+&lt;p&gt;A managed identity acts as a user in your Active Directory for automation purposes. It is inherently tied to your web app and will be deleted if the web app is deleted. For this scenario, the identity will be used to retrieve the secrets from Key Vault when the app starts. Run the following command to create a manged identity:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;az webapp identity assign &lt;span class=&quot;nt&quot;&gt;--name&lt;/span&gt; &amp;lt;app_from_last_article&amp;gt; &lt;span class=&quot;nt&quot;&gt;--resource-group&lt;/span&gt; &amp;lt;resource_group_of_app&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In the console output, save the &lt;code class=&quot;highlighter-rouge&quot;&gt;principalId&lt;/code&gt; for later.&lt;/p&gt;
+
+&lt;h2 id=&quot;provision-the-key-vault&quot;&gt;Provision the Key Vault&lt;/h2&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;Let’s spin up a Key Vault named &lt;code class=&quot;highlighter-rouge&quot;&gt;java-app-key-vault&lt;/code&gt;. For information about the parameters specified below, run &lt;code class=&quot;highlighter-rouge&quot;&gt;az keyvault create --help&lt;/code&gt;.&lt;/p&gt;
+
+    &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; az keyvault create &lt;span class=&quot;nt&quot;&gt;--name&lt;/span&gt; java-app-key-vault              &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+                    &lt;span class=&quot;nt&quot;&gt;--resource-group&lt;/span&gt; &amp;lt;your_resource_group&amp;gt; &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+                    &lt;span class=&quot;nt&quot;&gt;--location&lt;/span&gt; &amp;lt;location&amp;gt;                  &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+                    &lt;span class=&quot;nt&quot;&gt;--enabled-for-deployment&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;true&lt;/span&gt;          &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+                    &lt;span class=&quot;nt&quot;&gt;--enabled-for-disk-encryption&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;true&lt;/span&gt;     &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+                    &lt;span class=&quot;nt&quot;&gt;--enabled-for-template-deployment&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;true&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+                    &lt;span class=&quot;nt&quot;&gt;--sku&lt;/span&gt; standard
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Now we will grant the managed identity &lt;code class=&quot;highlighter-rouge&quot;&gt;get&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;list&lt;/code&gt; access to the Key Vault.&lt;/p&gt;
+
+    &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; az keyvault set-policy &lt;span class=&quot;nt&quot;&gt;--name&lt;/span&gt; java-app-key-vault     &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+                        &lt;span class=&quot;nt&quot;&gt;--secret-permission&lt;/span&gt; get list  &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+                        &lt;span class=&quot;nt&quot;&gt;--object-id&lt;/span&gt; &amp;lt;the principal ID from earlier&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Finally, we will add the Postgres username, password, and URL to the Key Vault. If you followed the tutorial on data sources, you should still have the secrets saved as environment variables on your machine. (If you are using Powershell, use the &lt;code class=&quot;highlighter-rouge&quot;&gt;$env:ENV_VAR&lt;/code&gt; syntax to inject the environment variables into the following command).&lt;/p&gt;
+
+    &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; az keyvault secret &lt;span class=&quot;nb&quot;&gt;set&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;--name&lt;/span&gt; POSTGRES-USERNAME      &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+                    &lt;span class=&quot;nt&quot;&gt;--value&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$POSTGRES_USERNAME&lt;/span&gt;        &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+                    &lt;span class=&quot;nt&quot;&gt;--vault-name&lt;/span&gt; java-app-key-vault
+ az keyvault secret &lt;span class=&quot;nb&quot;&gt;set&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;--name&lt;/span&gt; POSTGRES-PASSWORD      &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+                    &lt;span class=&quot;nt&quot;&gt;--value&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$POSTGRES_PASSWORD&lt;/span&gt;        &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+                    &lt;span class=&quot;nt&quot;&gt;--vault-name&lt;/span&gt; java-app-key-vault
+ az keyvault secret &lt;span class=&quot;nb&quot;&gt;set&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;--name&lt;/span&gt; POSTGRES-URL           &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+                    &lt;span class=&quot;nt&quot;&gt;--value&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$POSTGRES_URL&lt;/span&gt;             &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+                    &lt;span class=&quot;nt&quot;&gt;--vault-name&lt;/span&gt; java-app-key-vault
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;configuring-our-app&quot;&gt;Configuring our App&lt;/h2&gt;
+
+&lt;p&gt;The following instructions assume you have completed the &lt;a href=&quot;https://jasonfreeberg.com/Data-Sources-with-Spring/&quot;&gt;previous tutorial&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;key-vault-references&quot;&gt;Key Vault References&lt;/h3&gt;
+
+&lt;p&gt;When our Spring app is running on App Service, the secrets will be exposed as environment variables or “&lt;a href=&quot;https://docs.microsoft.com/en-us/azure/app-service/web-sites-configure#app-settings&quot;&gt;Application Settings&lt;/a&gt;”. We will now create these app settings using the Azure CLI.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;First, we need the URI’s of our three secrets. Run the commands below and copy the &lt;code class=&quot;highlighter-rouge&quot;&gt;id&lt;/code&gt; value in the console output.&lt;/p&gt;
+
+    &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; az keyvault secret show &lt;span class=&quot;nt&quot;&gt;--vault-name&lt;/span&gt; java-app-key-vault &lt;span class=&quot;nt&quot;&gt;--name&lt;/span&gt; POSTGRES-URL
+ az keyvault secret show &lt;span class=&quot;nt&quot;&gt;--vault-name&lt;/span&gt; java-app-key-vault &lt;span class=&quot;nt&quot;&gt;--name&lt;/span&gt; POSTGRES-USERNAME
+ az keyvault secret show &lt;span class=&quot;nt&quot;&gt;--vault-name&lt;/span&gt; java-app-key-vault &lt;span class=&quot;nt&quot;&gt;--name&lt;/span&gt; POSTGRES-PASSWORD
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Now we will create the app settings with the Key Vault references. For each setting, replace “YOUR_SECRET_URI” with the corresponding id’s from the previous step.&lt;/p&gt;
+
+    &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; az webapp config appsettings &lt;span class=&quot;nb&quot;&gt;set&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-n&lt;/span&gt; &amp;lt;your_app_name&amp;gt; &lt;span class=&quot;nt&quot;&gt;-g&lt;/span&gt; &amp;lt;resource_group&amp;gt; &lt;span class=&quot;nt&quot;&gt;--settings&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+     &lt;span class=&quot;nv&quot;&gt;SPRING_DATASOURCE_URL&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;@Microsoft.KeyVault&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;SecretUri&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;YOUR_SECRET_URI&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+     &lt;span class=&quot;nv&quot;&gt;SPRING_DATASOURCE_USERNAME&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;@Microsoft.KeyVault&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;SecretUri&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;YOUR_SECRET_URI&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+     &lt;span class=&quot;nv&quot;&gt;SPRING_DATASOURCE_PASSWORD&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;@Microsoft.KeyVault&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;SecretUri&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;YOUR_SECRET_URI&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;A Key Vault reference is of the form &lt;code class=&quot;highlighter-rouge&quot;&gt;@Microsoft.KeyVault(SecretUri=&amp;lt;SecretURI&amp;gt;)&lt;/code&gt;, where &lt;code class=&quot;highlighter-rouge&quot;&gt;&amp;lt;SecretURI&amp;gt;&lt;/code&gt; is data-plane URI of a secret in Key Vault, including a version. There is an alternate syntax &lt;a href=&quot;https://docs.microsoft.com/en-us/azure/app-service/app-service-key-vault-references#reference-syntax&quot;&gt;documented here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;environment-configuration&quot;&gt;Environment Configuration&lt;/h3&gt;
+
+&lt;p&gt;The Key Vault references will be replaced with the actual secrets when our App Service boots up. This means our Spring application needs to resolve the connection strings at &lt;em&gt;runtime&lt;/em&gt;. (It currently resolves these strings at build time.) We also want to be able to use our H2 database for development, and optionally connect to the production DB from our local machine to run tests. To fill all these requirements, we will create two new configuration files: &lt;code class=&quot;highlighter-rouge&quot;&gt;application-dev.properties&lt;/code&gt;, and &lt;code class=&quot;highlighter-rouge&quot;&gt;application-prod.properties&lt;/code&gt;.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;Create a file under &lt;code class=&quot;highlighter-rouge&quot;&gt;src/main/resources&lt;/code&gt; named &lt;code class=&quot;highlighter-rouge&quot;&gt;application-dev.properties&lt;/code&gt;. Copy/paste the following into the file:&lt;/p&gt;
+
+    &lt;div class=&quot;language-yml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; &lt;span class=&quot;c1&quot;&gt;# ===============================&lt;/span&gt;
+ &lt;span class=&quot;c1&quot;&gt;# = DATA SOURCE&lt;/span&gt;
+ &lt;span class=&quot;c1&quot;&gt;# ===============================&lt;/span&gt;
+ &lt;span class=&quot;c1&quot;&gt;# Set here configurations for the database connection&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;spring.datasource.url=jdbc:h2:mem:testdb&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;spring.datasource.username=sa&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;spring.datasource.password=&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;spring.datasource.driver-class-name=org.h2.Driver&lt;/span&gt;
+
+ &lt;span class=&quot;s&quot;&gt;# ===============================&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;# = JPA / HIBERNATE&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;# ===============================&lt;/span&gt;
+
+ &lt;span class=&quot;s&quot;&gt;# Allows Hibernate to generate SQL optimized for a particular DBMS&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect&lt;/span&gt;
+
+ &lt;span class=&quot;s&quot;&gt;# App Service&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;server.port=8080&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Create a file under &lt;code class=&quot;highlighter-rouge&quot;&gt;src/main/resources&lt;/code&gt; named &lt;code class=&quot;highlighter-rouge&quot;&gt;application-dev.properties&lt;/code&gt;. Copy/paste the following into the file. Notice that we do not set the connection strings here. Instead, Spring will resolve them at runtime by looking for the uppercase and underscored versions of &lt;code class=&quot;highlighter-rouge&quot;&gt;spring.datasource.url&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;spring.datasource.username&lt;/code&gt;, and &lt;code class=&quot;highlighter-rouge&quot;&gt;spring.datasource.password&lt;/code&gt;.&lt;/p&gt;
+
+    &lt;div class=&quot;language-yml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; &lt;span class=&quot;c1&quot;&gt;# ===============================&lt;/span&gt;
+ &lt;span class=&quot;c1&quot;&gt;# = DATA SOURCE&lt;/span&gt;
+ &lt;span class=&quot;c1&quot;&gt;# ===============================&lt;/span&gt;
+
+ &lt;span class=&quot;c1&quot;&gt;# The connection URL, username, and password will be sourced from environment variables&lt;/span&gt;
+ &lt;span class=&quot;c1&quot;&gt;# on App Service&lt;/span&gt;
+
+ &lt;span class=&quot;c1&quot;&gt;# Set here configurations for the database connection&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;spring.datasource.driver-class-name=org.postgresql.Driver&lt;/span&gt;
+
+ &lt;span class=&quot;s&quot;&gt;# ===============================&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;# = JPA / HIBERNATE&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;# ===============================&lt;/span&gt;
+
+ &lt;span class=&quot;s&quot;&gt;# Allows Hibernate to generate SQL optimized for a particular DBMS&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect&lt;/span&gt;
+
+ &lt;span class=&quot;s&quot;&gt;# App Service&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;server.port=80&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Now we can slim-down our original &lt;code class=&quot;highlighter-rouge&quot;&gt;application.properties&lt;/code&gt; file. Replace the contents of &lt;code class=&quot;highlighter-rouge&quot;&gt;application.properties&lt;/code&gt; with the following:&lt;/p&gt;
+
+    &lt;div class=&quot;language-yml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; &lt;span class=&quot;c1&quot;&gt;# Active profile is set by Maven&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;spring.profiles.active=@spring.profiles.active@&lt;/span&gt;
+
+ &lt;span class=&quot;s&quot;&gt;# ===============================&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;# = DATA SOURCE&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;# ===============================&lt;/span&gt;
+
+ &lt;span class=&quot;s&quot;&gt;# Keep the connection alive if idle for a long time (needed in production)&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;spring.datasource.testWhileIdle=true&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;spring.datasource.validationQuery=SELECT &lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;
+
+ &lt;span class=&quot;c1&quot;&gt;# ===============================&lt;/span&gt;
+ &lt;span class=&quot;c1&quot;&gt;# = JPA / HIBERNATE&lt;/span&gt;
+ &lt;span class=&quot;c1&quot;&gt;# ===============================&lt;/span&gt;
+ &lt;span class=&quot;c1&quot;&gt;# Show or not log for each sql query&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;spring.jpa.show-sql=true&lt;/span&gt;
+
+ &lt;span class=&quot;s&quot;&gt;# Hibernate ddl auto (create, create-drop, update)&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;with &quot;create-drop&quot; the database&lt;/span&gt;
+ &lt;span class=&quot;c1&quot;&gt;# schema will be automatically created afresh for every start of application&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;spring.jpa.hibernate.ddl-auto=create&lt;/span&gt;
+
+ &lt;span class=&quot;c1&quot;&gt;# Naming strategy&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;spring.jpa.hibernate.naming.implicit-strategy=org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyHbmImpl&lt;/span&gt;
+ &lt;span class=&quot;s&quot;&gt;spring.jpa.hibernate.naming.physical-strategy=org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Finally, we can also slim down our Maven profiles because we have moved th information to the new properties files. The profile section of your &lt;code class=&quot;highlighter-rouge&quot;&gt;pom.xml&lt;/code&gt; should now be the following:&lt;/p&gt;
+
+    &lt;div class=&quot;language-xml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; &lt;span class=&quot;nt&quot;&gt;&amp;lt;profiles&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;nt&quot;&gt;&amp;lt;profile&amp;gt;&lt;/span&gt;
+     &lt;span class=&quot;c&quot;&gt;&amp;lt;!-- This profile will configure Spring to use an in-memory database for local development and testing. --&amp;gt;&lt;/span&gt;  
+     &lt;span class=&quot;nt&quot;&gt;&amp;lt;id&amp;gt;&lt;/span&gt;dev&lt;span class=&quot;nt&quot;&gt;&amp;lt;/id&amp;gt;&lt;/span&gt;  
+     &lt;span class=&quot;nt&quot;&gt;&amp;lt;activation&amp;gt;&lt;/span&gt;
+       &lt;span class=&quot;nt&quot;&gt;&amp;lt;activeByDefault&amp;gt;&lt;/span&gt;true&lt;span class=&quot;nt&quot;&gt;&amp;lt;/activeByDefault&amp;gt;&lt;/span&gt;
+     &lt;span class=&quot;nt&quot;&gt;&amp;lt;/activation&amp;gt;&lt;/span&gt;  
+     &lt;span class=&quot;nt&quot;&gt;&amp;lt;properties&amp;gt;&lt;/span&gt;
+       &lt;span class=&quot;nt&quot;&gt;&amp;lt;spring.profiles.active&amp;gt;&lt;/span&gt;dev&lt;span class=&quot;nt&quot;&gt;&amp;lt;/spring.profiles.active&amp;gt;&lt;/span&gt;
+     &lt;span class=&quot;nt&quot;&gt;&amp;lt;/properties&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;nt&quot;&gt;&amp;lt;/profile&amp;gt;&lt;/span&gt;  
+   &lt;span class=&quot;nt&quot;&gt;&amp;lt;profile&amp;gt;&lt;/span&gt;
+     &lt;span class=&quot;c&quot;&gt;&amp;lt;!-- This profile will configure the application to use our Azure PostgreSQL server. --&amp;gt;&lt;/span&gt;  
+     &lt;span class=&quot;nt&quot;&gt;&amp;lt;id&amp;gt;&lt;/span&gt;prod&lt;span class=&quot;nt&quot;&gt;&amp;lt;/id&amp;gt;&lt;/span&gt;  
+     &lt;span class=&quot;nt&quot;&gt;&amp;lt;properties&amp;gt;&lt;/span&gt;  
+       &lt;span class=&quot;nt&quot;&gt;&amp;lt;spring.profiles.active&amp;gt;&lt;/span&gt;prod&lt;span class=&quot;nt&quot;&gt;&amp;lt;/spring.profiles.active&amp;gt;&lt;/span&gt;
+     &lt;span class=&quot;nt&quot;&gt;&amp;lt;/properties&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;nt&quot;&gt;&amp;lt;/profile&amp;gt;&lt;/span&gt;
+ &lt;span class=&quot;nt&quot;&gt;&amp;lt;/profiles&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;See &lt;a href=&quot;https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html&quot;&gt;this article&lt;/a&gt; for more information on Spring configurations and precedence.&lt;/p&gt;
+
+&lt;h2 id=&quot;deploy-and-test&quot;&gt;Deploy and Test&lt;/h2&gt;
+
+&lt;p&gt;Check that the development profile works as expected by running the following commands and opening a browser to &lt;code class=&quot;highlighter-rouge&quot;&gt;http://localhost:8080/&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;mvn clean package &lt;span class=&quot;nt&quot;&gt;-Pdev&lt;/span&gt;
+java &lt;span class=&quot;nt&quot;&gt;-jar&lt;/span&gt; target/app.jar
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Before deploying to App Service, build your application with the production profile and test against your PostgreSQL DB from your local machine. To do so, rename the three environment variables beginning with &lt;code class=&quot;highlighter-rouge&quot;&gt;POSTGRES_&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;SPRING_DATASOURCE_URL&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;SPRING_DATASOURCE_USERNAME&lt;/code&gt;, and &lt;code class=&quot;highlighter-rouge&quot;&gt;SPRING_DATASOURCE_PASSWORD&lt;/code&gt; respectively. Run the following commands to build and start your app. Thanks to our new configuration, Spring will resolve the connection strings in the environment variables &lt;em&gt;at runtime&lt;/em&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;mvn clean package &lt;span class=&quot;nt&quot;&gt;-Pprod&lt;/span&gt;
+java &lt;span class=&quot;nt&quot;&gt;-jar&lt;/span&gt; target/app.jar
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Finally, deploy the production app to App Service with &lt;code class=&quot;highlighter-rouge&quot;&gt;mvn azure-webapp:deploy&lt;/code&gt;. Browse to the application and test that it works properly.&lt;/p&gt;
+
+&lt;h2 id=&quot;next-steps&quot;&gt;Next Steps&lt;/h2&gt;
+
+&lt;p&gt;See the &lt;a href=&quot;https://docs.microsoft.com/en-us/azure/app-service/containers/configure-language-java&quot;&gt;Java Developer Guide&lt;/a&gt; for more documentation and best practices for Java on App Service. Check back in the future for more articles. Thanks for reading!&lt;/p&gt;</content><author><name>Azure App Service</name></author><category term="Java" /><summary type="html">Securely store and access your connection strings with minimal code changes.</summary></entry><entry><title type="html">Removing Easy Tables and Easy APIs from Azure App Service</title><link href="https://azure.github.io/AppService/2019/07/25/Removing-Easy-Tables-and-Easy-APIs-from-Azure-App-Services.html" rel="alternate" type="text/html" title="Removing Easy Tables and Easy APIs from Azure App Service" /><published>2019-07-25T00:00:00+00:00</published><updated>2019-07-25T00:00:00+00:00</updated><id>https://azure.github.io/AppService/2019/07/25/Removing%20Easy%20Tables%20and%20Easy%20APIs%20from%20Azure%20App%20Services</id><content type="html" xml:base="https://azure.github.io/AppService/2019/07/25/Removing-Easy-Tables-and-Easy-APIs-from-Azure-App-Services.html">&lt;blockquote&gt;
+  &lt;p&gt;Integrating mobile services in your application? Sign up with &lt;a href=&quot;https://appcenter.ms/signup?utm_source=App%20Service%20Blog&amp;amp;utm_medium=Azure&amp;amp;utm_campaign=Remove%20Easy%20Tables%20and%20Easy%20API&quot;&gt;App Center&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://appcenter.ms&quot;&gt;Visual Studio App Center&lt;/a&gt; is the next generation solution for mobile application developers. It offers  integrated end-to-end services central to mobile development. If you are integrating Microsoft cloud services in your mobile application, sign up with &lt;a href=&quot;https://appcenter.ms/signup?utm_source=App%20Service%20Blog&amp;amp;utm_medium=Azure&amp;amp;utm_campaign=Remove%20Easy%20Tables%20and%20Easy%20API&quot;&gt;App Center&lt;/a&gt; today.&lt;/p&gt;
+
+&lt;h2 id=&quot;removing-easy-tables-and-easy-apis-from-azure-app-service&quot;&gt;Removing Easy Tables and Easy APIs from Azure App Service&lt;/h2&gt;
+&lt;p&gt;Azure App Service provides specific features for Node developers to easily get started with mobile backend services by leveraging Easy Tables and Easy APIs in the Azure portal. Easy Tables provides a portal experience for Node developers to create and manage their tables, their schema, and appropriate permissions. Easy APIs lets developers build and consume custom APIs in the backend.&lt;/p&gt;
+
+&lt;p&gt;Easy Tables and Easy APIs, along with the Mobile menu in the Azure portal will be removed on &lt;strong&gt;November 11, 2019&lt;/strong&gt; as these features have a limited audience and the existing functionality can be leveraged in alternate ways.&lt;/p&gt;
+
+&lt;p&gt;Developers that have mobile apps with a Node.js backend can leverage the existing functionality from Easy API and Easy Tables by following the guidance below.&lt;/p&gt;
+
+&lt;h2 id=&quot;easy-api&quot;&gt;Easy API&lt;/h2&gt;
+
+&lt;h3 id=&quot;existing-api&quot;&gt;Existing API&lt;/h3&gt;
+
+&lt;p&gt;Your existing APIs will continue to work as the backend is already deployed on App Services.&lt;/p&gt;
+
+&lt;h3 id=&quot;create-a-new-api-or-make-changes-to-existing-api&quot;&gt;Create a new API or make changes to existing API&lt;/h3&gt;
+
+&lt;p&gt;You can either make changes right in the Azure portal or modify the code locally in your development environment and then publish to Azure. Click on the &lt;strong&gt;App Service Editor (Preview)&lt;/strong&gt; under &lt;strong&gt;Development Tools&lt;/strong&gt; menu which provides an in-browser editing experience for your app code.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/AppService/media/2019/07/AppServiceEditor.png&quot; alt=&quot;Resource explorer navigation&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Click on &lt;strong&gt;Go&lt;/strong&gt; and once the App Service Editor opens, you have full control over the source code. Assuming you have already installed express and azure-mobile-apps package with npm install command, click on the &lt;strong&gt;api&lt;/strong&gt; folder under WWWROOT to create or edit custom API. Make your changes to the code file and the changes are saved automatically.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/AppService/media/2019/07/Api.png&quot; alt=&quot;Resource explorer navigation&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;easy-tables&quot;&gt;Easy Tables&lt;/h2&gt;
+
+&lt;p&gt;You have full control on the Azure SQL Database used to store the application data. Your existing tables will continue to work without any required changes. For the existing portal features, below are the alternatives:&lt;/p&gt;
+
+&lt;h3 id=&quot;add-from-csv&quot;&gt;Add from CSV&lt;/h3&gt;
+
+&lt;p&gt;Follow the documentation link in order to &lt;a href=&quot;https://docs.microsoft.com/en-us/azure/sql-database/sql-database-load-from-csv-with-bcp&quot;&gt;load data from CSV into Azure SQL Database&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;add-table&quot;&gt;Add Table&lt;/h3&gt;
+
+&lt;p&gt;The “+ Add” button lets you add tables to the database. There are four options for creating new tables in the database.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;Use SQL Server. This tutorial explains how to &lt;a href=&quot;https://docs.microsoft.com/en-us/azure/sql-database/sql-database-design-first-database#create-tables-in-your-database&quot;&gt;create tables in your database&lt;/a&gt;.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;From the SQL database in Azure portal, you can run the following query to add a table named &lt;code class=&quot;highlighter-rouge&quot;&gt;TodoItems&lt;/code&gt; from &lt;strong&gt;Query editor (preview)&lt;/strong&gt;&lt;/p&gt;
+
+    &lt;div class=&quot;language-sql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  &lt;span class=&quot;k&quot;&gt;CREATE&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;TABLE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;TodoItems&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;id&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;NVARCHAR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;36&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;PRIMARY&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;KEY&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;createdAt&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DATETIMEOFFSET&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;NOT&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;updatedAt&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DATETIMEOFFSET&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;version&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;TIMESTAMP&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;NOT&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;deleted&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;BIT&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;NOT&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;complete&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;BIT&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;NOT&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;text&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;NVARCHAR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;256&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;In App Service Editor or locally, click on &lt;code class=&quot;highlighter-rouge&quot;&gt;wwwroot/tables&lt;/code&gt; directly to create new files, {tablename}.js and {tablename}.json where {tablename} refers to the name of the table you  created in Step 1. Sample code can be found at &lt;a href=&quot;https://github.com/Azure/azure-mobile-apps-quickstarts/blob/master/backend/node/TodoSample/tables/todoitem.js&quot;&gt;todoitem.js&lt;/a&gt; and &lt;a href=&quot;https://github.com/Azure/azure-mobile-apps-quickstarts/blob/master/backend/node/TodoSample/tables/todoitem.json&quot;&gt;todoitem.json&lt;/a&gt;.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Edit the files locally and deploy the changes to Azure App Service.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;change-permission&quot;&gt;Change permission&lt;/h3&gt;
+
+&lt;p&gt;In order to change access permissions on tables, you can either use the portal to change the code or modify it locally in your development environment. Click on the &lt;strong&gt;App Service Editor (Preview)&lt;/strong&gt; under &lt;strong&gt;Development Tools&lt;/strong&gt; menu which provides an in-browser editing experience for your app code.&lt;/p&gt;
+
+&lt;p&gt;Assuming you have already installed express and azure-mobile-apps package with &lt;code class=&quot;highlighter-rouge&quot;&gt;npm install&lt;/code&gt; command, click on “Go” to open the App Service Editor. Once open, click on the &lt;strong&gt;tables&lt;/strong&gt; folder under WWWROOT and open the json file for the table that you want the permissions to change. This will let you modify the access permissions for insert, update, delete, read and undelete operations for that table. You can also do this locally in the app code and deploy back to App Services.&lt;/p&gt;
+
+&lt;h3 id=&quot;edit-script&quot;&gt;Edit script&lt;/h3&gt;
+
+&lt;p&gt;You can edit your table script by either using the &lt;strong&gt;App Service Editor&lt;/strong&gt; or modifying the code locally and deploying it back to App Services.&lt;/p&gt;
+
+&lt;h3 id=&quot;delete-table&quot;&gt;Delete table&lt;/h3&gt;
+
+&lt;p&gt;Since you own your SQL database, you can delete the table by executing a SQL query against the database.&lt;/p&gt;
+
+&lt;h3 id=&quot;clear-table&quot;&gt;Clear table&lt;/h3&gt;
+
+&lt;p&gt;Since you own your SQL database, you can clear contents of the table by executing a SQL query against the database.&lt;/p&gt;
+
+&lt;h3 id=&quot;streaming-logs&quot;&gt;Streaming logs&lt;/h3&gt;
+
+&lt;p&gt;You can use Log stream under the Monitoring menu to stream your application and Web Server logs.&lt;/p&gt;</content><author><name>Azure App Service</name></author><category term="mobile apps" /><summary type="html">Integrating mobile services in your application? Sign up with App Center</summary></entry><entry><title type="html">PHP Minor Version Update for July 2019</title><link href="https://azure.github.io/AppService/2019/07/17/PHP-Minor-Version-Update-for-July-2019.html" rel="alternate" type="text/html" title="PHP Minor Version Update for July 2019" /><published>2019-07-17T00:00:00+00:00</published><updated>2019-07-17T00:00:00+00:00</updated><id>https://azure.github.io/AppService/2019/07/17/PHP%20Minor%20Version%20Update%20for%20July%202019</id><content type="html" xml:base="https://azure.github.io/AppService/2019/07/17/PHP-Minor-Version-Update-for-July-2019.html">&lt;p&gt;Latest version updates to PHP&lt;/p&gt;
+
+&lt;p&gt;In July 2019, Azure App Service will update the PHP stacks to the latest available versions. For information on the changes in the new versions, please see the change logs on the PHP website.&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;PHP Version&lt;/th&gt;
+      &lt;th&gt;Change Log&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;7.1.28&lt;/td&gt;
+      &lt;td&gt;http://www.php.net/ChangeLog-7.php#7.1.28&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;7.2.17&lt;/td&gt;
+      &lt;td&gt;http://www.php.net/ChangeLog-7.php#7.2.17&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;7.3.4&lt;/td&gt;
+      &lt;td&gt;http://www.php.net/ChangeLog-7.php#7.3.4&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;Feel free to post any questions about PHP Minor Version Update for July 2019 on the &lt;a href=&quot;https://social.msdn.microsoft.com/forums/azure/en-US/home?forum=windowsazurewebsitespreview&quot;&gt;MSDN Forum&lt;/a&gt;.&lt;/p&gt;</content><author><name>Azure App Service</name></author><category term="PHP" /><summary type="html">Latest version updates to PHP</summary></entry></feed>
