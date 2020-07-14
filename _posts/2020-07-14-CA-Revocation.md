@@ -55,6 +55,8 @@ If you are uploading a certificate to your app web, you will need to update the 
 ### Through Azure Portal
 On Azure portal, go to **“TLS/SSL settings”** under **“Settings”** on the left navigation of your resource, select the binding you would like to update, and look for the new certificate from the dropdown. 
 
+![Updating bindings]({{site.baseurl}}/media/2020/07/updating-bindings.jpg)
+
 ### Through Scripts 
 - Refer to the documentation on [sample scripts for Azure CLI and Powershell](https://docs.microsoft.com/en-us/azure/app-service/configure-ssl-certificate#automate-with-scripts)
     - Note: You can run “New-AzWebAppSSLBinding” to add the new certificate to the existing hostname 
