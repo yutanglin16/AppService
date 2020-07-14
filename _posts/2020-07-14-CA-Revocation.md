@@ -23,7 +23,7 @@ If you are using an EV certificate issued by one of the revoked ICAs, your appli
 To avoid any interruption to your application due to this issue, or to re-issue a CA which has been revoked, you need to take the following actions:  
 
 1. Check https://knowledge.digicert.com/alerts/DigiCert-ICA-Replacement for more information on how to re-issue your certificates 
-1. Once your certificate has been reissued, add the new certificate to your web app by either uploading a new certificate to your web app or updating the new certificate in your Key Vault 
+1. Once your certificate has been reissued, [add the new certificate to your web app](https://docs.microsoft.com/en-us/azure/app-service/configure-ssl-certificate) by either uploading a new certificate to your web app or by updating the new certificate in your Key Vault 
 1. Once you have added your certificate to your web app, you will need to update your bindings [refer to the next section](#safely-updating-bindings). 
 
 ## How to safely update your bindings <a name="safely-updating-bindings"></a>
